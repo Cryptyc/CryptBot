@@ -42,9 +42,6 @@ int main(int argc, char* argv[]) {
 	if (!coordinator.LoadSettings(argc, argv)) {
 		return 1;
 	}
-	if (!coordinator.LoadSettings(argc, argv)) {
-		return 1;
-	}
 
 	// Add the custom bot, it will control the players.
 	CryptBot bot;
