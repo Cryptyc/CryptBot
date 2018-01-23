@@ -71,6 +71,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetExt>.exe</TargetExt>
+    <IncludePath>$(SolutionDir)..\s2client-api\project\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\s2client-api\project\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(SolutionDir)..\s2client-api\project\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\s2client-api\project\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
