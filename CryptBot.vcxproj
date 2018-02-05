@@ -131,6 +131,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cryptbot.h" />
+    <ClInclude Include="LadderInterface.h" />
     <ClInclude Include="Strategys.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

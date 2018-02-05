@@ -58,7 +58,9 @@ public:
     bool TryBuildStructureNearPylon(AbilityID ability_type_for_structure, UnitTypeID unit_type, Point2D NearPoint, bool UseScout = false);
     void ExcludeRushPylons(std::vector<PowerSource>& PowerSources);
     void TryBuildArmy(const ObservationInterface * observation);
+	void TryBuildAltArmy(const ObservationInterface * observation);
     void TryBuildCannonRush(const ObservationInterface * observation);
+	void TryBuildAltStrategy(const ObservationInterface * observation);
     bool TryBuildStructureNearPylon(AbilityID ability_type_for_structure, UnitTypeID unit_type);
     bool TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, Point2D TargetLocation, bool UseScout = false);
     virtual void OnGameStart() override;
@@ -115,6 +117,8 @@ private:
     int32_t MaxDefenseCannons;
     int32_t CurrentOffenseno;
 	bool RushPylonDestroyed;
+	sc2::Race OpponentRace;
+	bool UseAltStrategy;
 
 };
 

@@ -84,6 +84,7 @@ struct IsBuilding {
 		}
 	}
 };
+
 struct IsArmy {
 	bool operator()(const sc2::Unit & unit)
 	{
@@ -169,6 +170,73 @@ struct IsArmy {
 		}
 	}
 };
+
+struct IsGroundArmy {
+	bool operator()(const sc2::Unit & unit)
+	{
+		switch (unit.unit_type.ToType())
+		{
+		case UNIT_TYPEID::TERRAN_BANSHEE: return true;
+		case UNIT_TYPEID::TERRAN_BATTLECRUISER: return true;
+		case UNIT_TYPEID::TERRAN_CYCLONE: return true;
+		case UNIT_TYPEID::TERRAN_GHOST: return true;
+		case UNIT_TYPEID::TERRAN_HELLION: return true;
+		case UNIT_TYPEID::TERRAN_HELLIONTANK: return true;
+		case UNIT_TYPEID::TERRAN_MARAUDER: return true;
+		case UNIT_TYPEID::TERRAN_MARINE: return true;
+		case UNIT_TYPEID::TERRAN_MULE: return true;
+		case UNIT_TYPEID::TERRAN_REAPER: return true;
+		case UNIT_TYPEID::TERRAN_SCV: return true;
+		case UNIT_TYPEID::TERRAN_SIEGETANK: return true;
+		case UNIT_TYPEID::TERRAN_SIEGETANKSIEGED: return true;
+		case UNIT_TYPEID::TERRAN_THOR: return true;
+		case UNIT_TYPEID::TERRAN_THORAP: return true;
+		case UNIT_TYPEID::TERRAN_VIKINGASSAULT: return true;
+		case UNIT_TYPEID::ZERG_BANELING: return true;
+		case UNIT_TYPEID::ZERG_BROODLING: return true;
+		case UNIT_TYPEID::ZERG_BROODLORDCOCOON: return true;
+		case UNIT_TYPEID::ZERG_CHANGELING: return true;
+		case UNIT_TYPEID::ZERG_CHANGELINGMARINE: return true;
+		case UNIT_TYPEID::ZERG_CHANGELINGMARINESHIELD: return true;
+		case UNIT_TYPEID::ZERG_CHANGELINGZEALOT: return true;
+		case UNIT_TYPEID::ZERG_CHANGELINGZERGLING: return true;
+		case UNIT_TYPEID::ZERG_CHANGELINGZERGLINGWINGS: return true;
+		case UNIT_TYPEID::ZERG_CORRUPTOR: return true;
+		case UNIT_TYPEID::ZERG_DRONE: return true;
+		case UNIT_TYPEID::ZERG_HYDRALISK: return true;
+		case UNIT_TYPEID::ZERG_INFESTEDTERRANSEGG: return true;
+		case UNIT_TYPEID::ZERG_INFESTOR: return true;
+		case UNIT_TYPEID::ZERG_INFESTORTERRAN: return true;
+		case UNIT_TYPEID::ZERG_LURKERMP: return true;
+		case UNIT_TYPEID::ZERG_OVERLORD: return true;
+		case UNIT_TYPEID::ZERG_OVERLORDTRANSPORT: return true;
+		case UNIT_TYPEID::ZERG_OVERSEER: return true;
+		case UNIT_TYPEID::ZERG_QUEEN: return true;
+		case UNIT_TYPEID::ZERG_RAVAGER: return true;
+		case UNIT_TYPEID::ZERG_ROACH: return true;
+		case UNIT_TYPEID::ZERG_SPINECRAWLERUPROOTED: return true;
+		case UNIT_TYPEID::ZERG_SPORECRAWLERUPROOTED: return true;
+		case UNIT_TYPEID::ZERG_SWARMHOSTBURROWEDMP: return true;
+		case UNIT_TYPEID::ZERG_SWARMHOSTMP: return true;
+		case UNIT_TYPEID::ZERG_TRANSPORTOVERLORDCOCOON: return true;
+		case UNIT_TYPEID::ZERG_ULTRALISK: return true;
+		case UNIT_TYPEID::ZERG_ZERGLING: return true;
+		case UNIT_TYPEID::PROTOSS_ADEPT: return true;
+		case UNIT_TYPEID::PROTOSS_ARCHON: return true;
+		case UNIT_TYPEID::PROTOSS_COLOSSUS: return true;
+		case UNIT_TYPEID::PROTOSS_DARKTEMPLAR: return true;
+		case UNIT_TYPEID::PROTOSS_DISRUPTOR: return true;
+		case UNIT_TYPEID::PROTOSS_HIGHTEMPLAR: return true;
+		case UNIT_TYPEID::PROTOSS_IMMORTAL: return true;
+		case UNIT_TYPEID::PROTOSS_PROBE: return true;
+		case UNIT_TYPEID::PROTOSS_SENTRY: return true;
+		case UNIT_TYPEID::PROTOSS_STALKER: return true;
+		case UNIT_TYPEID::PROTOSS_ZEALOT: return true;
+		default: return false;
+		}
+	}
+};
+
 
 struct IsTownHall {
 	bool operator()(const Unit& unit) {
@@ -337,6 +405,7 @@ CryptBot::CryptBot()
 	, CurrentOffenseno(0)
 	, HasTrainedCarrierLaunch(false)
 	, RushPylonDestroyed(false)
+	, UseAltStrategy(false)
 {
 	PylonSearchParams.radiuses_ = { 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f };
 	PylonSearchParams.circle_step_size_ = 0.5f;
@@ -448,6 +517,16 @@ void CryptBot::OnGameStart()
 	expansions_ = search::CalculateExpansionLocations(Observation(), Query());
 
 	game_info_ = new sc2::GameInfo(Observation()->GetGameInfo());
+	bool OwnRaceFound = false;
+	for (const auto &info : game_info_->player_info)
+	{
+		if (info.race_actual == sc2::Race::Protoss && OwnRaceFound == false)
+		{
+			OwnRaceFound = true;
+			continue;
+		}
+		OpponentRace = info.race_actual;
+	}
 	SetupRushLocation(Observation());
 }
 
@@ -462,15 +541,16 @@ void CryptBot::OnUnitDestroyed(const Unit *unit) {
 		break;
 	}
 	case UNIT_TYPEID::PROTOSS_PYLON:
-		if (Distance2D(unit->pos, *StartPosition) > Distance2D(unit->pos, RushLocation))
+		if (unit->alliance == sc2::Unit::Alliance::Self && Distance2D(unit->pos, *StartPosition) > Distance2D(unit->pos, RushLocation))
 		{
 			RushPylonDestroyed = true;
+			UseAltStrategy = true;
 		}
 		break;
 
 	case UNIT_TYPEID::PROTOSS_PHOTONCANNON:
 	{
-		if (Distance2D(unit->pos, *StartPosition) < Distance2D(unit->pos, RushLocation))
+		if (unit->alliance == sc2::Unit::Alliance::Self && Distance2D(unit->pos, *StartPosition) < Distance2D(unit->pos, RushLocation))
 		{
 			CurrentDefenseCannons -= 1;
 			MaxDefenseCannons += 2;
@@ -624,6 +704,11 @@ void CryptBot::OnUnitCreated(const Unit *unit)
 				}
 				break;
 			}
+			else if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_MOTHERSHIP)
+			{
+				ThisBG.Members.push_back(unit->tag);
+				break;
+			}
 		}
 		BattleGroup BG;
 		BG.Attacking = false;
@@ -666,6 +751,7 @@ void CryptBot::ManageBattleGroups(const ObservationInterface* observation)
 {
 	Units EnemyBuildings = observation->GetUnits(Unit::Alliance::Enemy, IsBuilding());
 	Units EnemyArmy = observation->GetUnits(Unit::Alliance::Enemy, IsArmy());
+	Units EnemyGroundArmy = observation->GetUnits(Unit::Alliance::Enemy, IsGroundArmy());
 	const Point2D nullpos = Point2D(0, 0);
 	for (auto &ThisBG : BattleGroups)
 	{
@@ -690,7 +776,16 @@ void CryptBot::ManageBattleGroups(const ObservationInterface* observation)
 		const Unit *Primary = observation->GetUnit(ThisBG.Members.back());
 		if (Primary != nullptr)
 		{
-			int64_t AttackableUnit = FindNearestUnit(Primary->pos, EnemyArmy, ATTACK_TYPE::FLYING);
+			int64_t AttackableUnit = 0;
+			if (Primary->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR)
+			{
+				AttackableUnit = FindNearestUnit(Primary->pos, EnemyArmy, ATTACK_TYPE::FLYING);
+
+			}
+			else
+			{
+				AttackableUnit = FindNearestUnit(Primary->pos, EnemyGroundArmy, ATTACK_TYPE::GROUND);
+			}
 			if (AttackableUnit == 0)
 			{
 				AttackableUnit = FindNearestUnit(Primary->pos, EnemyBuildings);
@@ -1067,7 +1162,7 @@ void CryptBot::OnStep() {
 	CheckScouting(observation);
 	EconStrat(observation);
 	
-	if (CurrentGameLoop < 7000 || RushPylonDestroyed)
+	if (CurrentGameLoop < 7000 && !RushPylonDestroyed)
 	{
 		TryBuildCannonRush(observation);
 	}
@@ -1075,13 +1170,26 @@ void CryptBot::OnStep() {
 	
 	{
 		TryBuildPylon(observation);
-		TryBuildBuildings(observation);
-		if (observation->GetFoodWorkers() > 18)
+		if (OpponentRace == sc2::Race::Terran && UseAltStrategy)
 		{
-			TryBuildArmy(observation);
-			ManageBattleGroups(observation);
+			TryBuildAltStrategy(observation);
+			if (observation->GetFoodWorkers() > 18)
+			{
+				TryBuildAltArmy(observation);
+				ManageBattleGroups(observation);
+			}
 		}
-		observation->GetUnitTypeData();
+		else
+		{
+			TryBuildBuildings(observation);
+			if (observation->GetFoodWorkers() > 18)
+			{
+				TryBuildArmy(observation);
+				ManageBattleGroups(observation);
+			}
+			observation->GetUnitTypeData();
+
+		}
 
 	}
 
@@ -1119,6 +1227,30 @@ void CryptBot::TryBuildArmy(const ObservationInterface* observation)
 		}
 	}
 }
+
+void CryptBot::TryBuildAltArmy(const ObservationInterface* observation)
+{
+	if (observation->GetMinerals() < 250 || observation->GetVespene() < 150)
+	{
+		return;
+	}
+	size_t dark_count = CountUnitType(observation, UNIT_TYPEID::PROTOSS_DARKSHRINE);
+	Units Gateways = observation->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::PROTOSS_GATEWAY));
+	if (Gateways.size() > 0 && dark_count > 0)
+	{
+		if (observation->GetMinerals() > 350 && observation->GetVespene() > 250)
+		{
+			for (const auto& Gateway : Gateways)
+			{
+				if (Gateway->orders.empty())
+				{
+					Actions()->UnitCommand(Gateway, ABILITY_ID::TRAIN_DARKTEMPLAR);
+				}
+			}
+		}
+	}
+}
+
 void CryptBot::TryBuildCannonRush(const ObservationInterface* observation)
 {
 	size_t forge_count = CountUnitType(observation, UNIT_TYPEID::PROTOSS_FORGE);
@@ -1151,6 +1283,58 @@ void CryptBot::TryBuildCannonRush(const ObservationInterface* observation)
 				TryBuildStructureNearPylon(ABILITY_ID::BUILD_PHOTONCANNON, UNIT_TYPEID::PROTOSS_PROBE, RushLocation, true);
 			}
 		}
+	}
+}
+
+void CryptBot::TryBuildAltStrategy(const ObservationInterface* observation)
+{
+	if (CurrentDefenseCannons < MaxDefenseCannons && observation->GetMinerals() > 150)
+	{
+
+		TryBuildStructureNearPylon(ABILITY_ID::BUILD_PHOTONCANNON, UNIT_TYPEID::PROTOSS_PROBE);
+	}
+	size_t gateway_count = CountUnitType(observation, UNIT_TYPEID::PROTOSS_GATEWAY) + CountUnitType(observation, UNIT_TYPEID::PROTOSS_WARPGATE);
+	if (gateway_count < 1)
+	{
+		if (observation->GetMinerals() > 150) {
+
+			TryBuildStructureNearPylon(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE);
+		}
+		return;
+	}
+	size_t cybernetics_count = CountUnitType(observation, UNIT_TYPEID::PROTOSS_CYBERNETICSCORE);
+	if (cybernetics_count < 1)
+	{
+		if (observation->GetMinerals() > 150) {
+			TryBuildStructureNearPylon(ABILITY_ID::BUILD_CYBERNETICSCORE, UNIT_TYPEID::PROTOSS_PROBE);
+		}
+		return;
+	}
+	size_t twilight_count = CountUnitType(observation, UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL);
+	if (twilight_count < 1)
+	{
+		if (observation->GetMinerals() > 150 && observation->GetVespene() > 100) 
+		{
+			TryBuildStructureNearPylon(ABILITY_ID::BUILD_TWILIGHTCOUNCIL, UNIT_TYPEID::PROTOSS_PROBE);
+		}
+		return;
+	}
+	size_t dark_count = CountUnitType(observation, UNIT_TYPEID::PROTOSS_DARKSHRINE);
+	if (dark_count < 1)
+	{
+		if (observation->GetMinerals() > 150 && observation->GetVespene() > 100)
+		{
+			TryBuildStructureNearPylon(ABILITY_ID::BUILD_DARKSHRINE, UNIT_TYPEID::PROTOSS_PROBE);
+		}
+		return;
+	}
+	if (gateway_count < 4)
+	{
+		if (observation->GetMinerals() > 150) {
+
+			TryBuildStructureNearPylon(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE);
+		}
+		return;
 	}
 }
 
