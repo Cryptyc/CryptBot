@@ -133,13 +133,12 @@ static void RunBot(int argc, char *argv[], sc2::Agent *Agent)
 	}
 
 	// Add the custom bot, it will control the players.
-	CryptBot bot;
 	int num_agents;
 	if (Options.ComputerOpponent)
 	{
 		num_agents = 1;
 		coordinator.SetParticipants({
-			CreateParticipant(sc2::Race::Protoss, &bot),
+			CreateParticipant(sc2::Race::Protoss, Agent),
 			CreateComputer(Options.ComputerRace, Options.ComputerDifficulty)
 			});
 	}
@@ -147,7 +146,7 @@ static void RunBot(int argc, char *argv[], sc2::Agent *Agent)
 	{
 		num_agents = 2;
 		coordinator.SetParticipants({
-			CreateParticipant(sc2::Race::Protoss, &bot),
+			CreateParticipant(sc2::Race::Protoss, Agent),
 			});
 	}
 
