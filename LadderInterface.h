@@ -122,7 +122,7 @@ static void ParseArguments(int argc, char *argv[], ConnectionOptions &connect_op
 	}
 }
 
-static void RunBot(int argc, char *argv[], sc2::Agent *Agent)
+static void RunBot(int argc, char *argv[], sc2::Agent *Agent,sc2::Race race)
 {
 	ConnectionOptions Options;
 	ParseArguments(argc, argv, Options);
@@ -138,7 +138,7 @@ static void RunBot(int argc, char *argv[], sc2::Agent *Agent)
 	{
 		num_agents = 1;
 		coordinator.SetParticipants({
-			CreateParticipant(sc2::Race::Protoss, Agent),
+			CreateParticipant(race, Agent),
 			CreateComputer(Options.ComputerRace, Options.ComputerDifficulty)
 			});
 	}
@@ -146,7 +146,7 @@ static void RunBot(int argc, char *argv[], sc2::Agent *Agent)
 	{
 		num_agents = 2;
 		coordinator.SetParticipants({
-			CreateParticipant(sc2::Race::Protoss, Agent),
+			CreateParticipant(race, Agent),
 			});
 	}
 
