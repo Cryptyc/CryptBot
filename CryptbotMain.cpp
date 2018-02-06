@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 int main(int argc, char* argv[]) 
 {
 
-	RunBot(argc, argv, new CryptBot());
+	RunBot(argc, argv, new CryptBot(), sc2::Race::Protoss);
 
 	return 0;
 }
